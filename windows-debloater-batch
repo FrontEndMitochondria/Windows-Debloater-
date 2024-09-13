@@ -1,0 +1,49 @@
+@echo off
+:: Elevate script privileges
+:: If not running as admin, re-launch the script as admin
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo This script requires administrative privileges. Restarting with admin rights...
+    powershell -Command "Start-Process '%~0' -Verb RunAs"
+    exit
+)
+
+echo.
+echo Removing Bloatware...
+echo.
+
+:: List of apps to remove. Add or remove app names as needed
+:: You can also use "Get-AppxPackage -AllUsers" in PowerShell to see more apps to remove
+powershell -Command "Get-AppxPackage -AllUsers *3dbuilder* | Remove-AppxPackage"
+powershell -Command "Get-AppxPackage -AllUsers *solitaire* | Remove-AppxPackage"
+powershell -Command "Get-AppxPackage -AllUsers *bing* | Remove-AppxPackage"
+powershell -Command "Get-AppxPackage -AllUsers *zune* | Remove-AppxPackage"
+powershell -Command "Get-AppxPackage -AllUsers *people* | Remove-AppxPackage"
+powershell -Command "Get-AppxPackage -AllUsers *xbox* | Remove-AppxPackage"
+powershell -Command "Get-AppxPackage -AllUsers *onemap* | Remove-AppxPackage"
+
+echo.
+echo Removing Telemetry...
+echo.
+
+:: Disable telemetry via the registry
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f
+
+:: Disable feedback
+reg add "HKCU\Software\Microsoft\Siuf\Rules" /v PeriodInNanoSeconds /t REG_QWORD /d 0 /f
+
+:: Disable compatibility telemetry
+schtasks /Change /TN "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser" /Disable
+
+:: Disable customer experience improvement program tasks
+schtasks /Change /TN "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator" /Disable
+schtasks /Change /TN "\Microsoft\Windows\Customer Experience Improvement Program\KernelCeipTask" /Disable
+schtasks /Change /TN "\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip" /Disable
+
+:: Disable remote assistance
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance" /v fAllowToGetHelp /t REG_DWORD /d 0 /f
+
+echo.
+echo Script completed. Please reboot the system for changes to take effect.
+echo.
+pause
